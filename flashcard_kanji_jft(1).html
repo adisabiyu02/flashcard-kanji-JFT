@@ -1,0 +1,410 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Flashcard Kanji JFT</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@500;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f8fafc;
+            -webkit-tap-highlight-color: transparent;
+        }
+        .kanji-font {
+            font-family: 'Noto Sans JP', sans-serif;
+        }
+        
+        /* 3D Flip Styles */
+        .perspective-1000 { perspective: 1000px; }
+        .transform-style-3d { transform-style: preserve-3d; }
+        .backface-hidden { backface-visibility: hidden; }
+        .rotate-y-180 { transform: rotateY(180deg); }
+        .card-inner { transition: transform 0.5s cubic-bezier(0.4, 0.2, 0.2, 1); }
+        .card.flipped .card-inner { transform: rotateY(180deg); }
+
+        /* Print formatting */
+        @media print {
+            body { background-color: white; padding: 0; }
+            .no-print { display: none !important; }
+            .screen-only { display: none !important; }
+            .print-only { display: block !important; }
+        }
+        @media screen {
+            .print-only { display: none !important; }
+        }
+    </style>
+</head>
+<body class="text-slate-800">
+
+<div class="max-w-md mx-auto p-4 pt-6">
+    
+    <!-- Header Area -->
+    <div class="no-print">
+        <div class="flex items-center gap-2 mb-4">
+            <svg class="w-6 h-6 text-teal-600" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24">
+                <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/>
+                <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/>
+            </svg>
+            <h1 class="text-xl font-bold text-teal-700 tracking-tight">Flashcard Kanji JFT</h1>
+        </div>
+
+        <div class="flex flex-wrap items-center gap-2 mb-6">
+            <button onclick="prepareAndPrint()" class="flex items-center gap-2 bg-[#e6fcf5] text-teal-600 px-4 py-2 rounded-lg font-medium hover:bg-teal-100 transition-colors text-sm">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24">
+                    <polyline points="6 9 6 2 18 2 18 9"/>
+                    <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/>
+                    <rect width="12" height="8" x="6" y="14"/>
+                </svg>
+                Siapkan PDF
+            </button>
+            <button onclick="shareApp()" class="flex items-center gap-2 bg-slate-100 text-slate-600 px-4 py-2 rounded-lg font-medium hover:bg-slate-200 transition-colors text-sm">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24">
+                    <path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/>
+                    <polyline points="16 6 12 2 8 6"/>
+                    <line x1="12" y1="2" x2="12" y2="15"/>
+                </svg>
+                Bagikan
+            </button>
+        </div>
+
+        <!-- Pagination Box -->
+        <div class="bg-white rounded-2xl shadow-sm border border-slate-100 p-5 mb-6">
+            <div class="text-center mb-5 text-[15px] text-slate-500">
+                Halaman <span class="font-bold text-teal-600" id="curr-page">1</span> dari <span id="tot-page">29</span> 
+                <span class="text-slate-400 ml-1" id="tot-words">(576 Kosakata)</span>
+            </div>
+            
+            <div class="flex justify-center items-center gap-3">
+                <button id="btn-prev" class="w-10 h-10 flex items-center justify-center border border-slate-200 rounded-xl bg-slate-50 text-slate-400 hover:bg-slate-100 disabled:opacity-50 transition-colors" onclick="changePage(-1)">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="m15 18-6-6 6-6"/></svg>
+                </button>
+                
+                <button class="px-5 h-10 border border-slate-200 rounded-xl bg-slate-50 hover:bg-slate-100 font-medium flex items-center gap-2 text-slate-600 text-sm transition-colors" onclick="resetCards()">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24">
+                        <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/>
+                        <path d="M3 3v5h5"/>
+                    </svg>
+                    Reset
+                </button>
+                
+                <button id="btn-next" class="w-10 h-10 flex items-center justify-center border border-slate-200 rounded-xl bg-slate-50 text-slate-600 hover:bg-slate-100 disabled:opacity-50 transition-colors" onclick="changePage(1)">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></svg>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Cards Grid (Hanya tampil di layar) -->
+    <div class="grid grid-cols-2 gap-4 pb-8 screen-only" id="flashcard-grid">
+        <!-- Kartu akan dimasukkan melalui JavaScript -->
+    </div>
+
+    <!-- Print Container (Hanya tampil saat mode PDF/Print) -->
+    <div id="print-container" class="print-only"></div>
+
+</div>
+
+<!-- Toast Notification -->
+<div id="toast" class="fixed bottom-6 left-1/2 transform -translate-x-1/2 bg-slate-800 text-white px-5 py-3 rounded-xl shadow-xl text-sm transition-opacity duration-300 opacity-0 pointer-events-none z-50 flex items-center gap-2">
+    <svg class="w-4 h-4 text-teal-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"></path></svg>
+    <span id="toast-message">Link disalin!</span>
+</div>
+
+<script>
+// Fungsi Konversi Hiragana ke Romaji
+const romajiMap = {
+    'あ':'a','い':'i','う':'u','え':'e','お':'o',
+    'か':'ka','き':'ki','く':'ku','け':'ke','こ':'ko',
+    'さ':'sa','し':'shi','す':'su','せ':'se','そ':'so',
+    'た':'ta','ち':'chi','つ':'tsu','て':'te','と':'to',
+    'な':'na','に':'ni','ぬ':'nu','ね':'ne','の':'no',
+    'は':'ha','ひ':'hi','ふ':'fu','へ':'he','ほ':'ho',
+    'ま':'ma','み':'mi','む':'mu','め':'me','も':'mo',
+    'や':'ya','ゆ':'yu','よ':'yo',
+    'ら':'ra','り':'ri','る':'ru','れ':'re','ろ':'ro',
+    'わ':'wa','を':'wo','ん':'n',
+    'が':'ga','ぎ':'gi','ぐ':'gu','げ':'ge','ご':'go',
+    'ざ':'za','じ':'ji','ず':'zu','ぜ':'ze','ぞ':'zo',
+    'だ':'da','ぢ':'ji','づ':'zu','で':'de','ど':'do',
+    'ば':'ba','び':'bi','ぶ':'bu','べ':'be','ぼ':'bo',
+    'ぱ':'pa','ぴ':'pi','ぷ':'pu','ぺ':'pe','ぽ':'po',
+    'きゃ':'kya','きゅ':'kyu','きょ':'kyo',
+    'しゃ':'sha','しゅ':'shu','しょ':'sho',
+    'ちゃ':'cha','ちゅ':'chu','ちょ':'cho',
+    'にゃ':'nya','にゅ':'nyu','にょ':'nyo',
+    'ひゃ':'hya','ひゅ':'hyu','ひょ':'hyo',
+    'みゃ':'mya','みゅ':'myu','みょ':'myo',
+    'りゃ':'rya','りゅ':'ryu','りょ':'ryo',
+    'ぎゃ':'gya','ぎゅ':'gyu','ぎょ':'gyo',
+    'じゃ':'ja','じゅ':'ju','じょ':'jo',
+    'びゃ':'bya','びゅ':'byu','びょ':'byo',
+    'ぴゃ':'pya','ぴゅ':'pyu','ぴょ':'pyo'
+};
+
+function kanaToRomaji(kana) {
+    let result = "";
+    let i = 0;
+    while (i < kana.length) {
+        let char = kana[i];
+        let nextChar = kana[i+1] || "";
+        let combined = char + nextChar;
+        
+        if (romajiMap[combined]) {
+            result += romajiMap[combined]; i += 2;
+        } else if (romajiMap[char]) {
+            result += romajiMap[char]; i++;
+        } else if (char === 'っ' && nextChar) {
+            let nextRomaji = romajiMap[nextChar + (kana[i+2] || "")] || romajiMap[nextChar];
+            if (nextRomaji) result += nextRomaji[0];
+            i++;
+        } else if (char === 'ー' || char === '-') {
+            if (result.length > 0) result += result[result.length-1];
+            i++;
+        } else if (char === '・' || char === ' ') {
+            result += ' '; i++;
+        } else if (char === '〜' || char === '~') {
+            result += '~'; i++;
+        } else {
+            result += char; i++;
+        }
+    }
+    return result;
+}
+
+// Data Kosakata (Lengkap 29 Halaman, 576 Item)
+const db = [
+    // Page 1
+    ["名前","なまえ","Nama"], ["氏名","しめい","Nama lengkap"], ["前","まえ","Sebelum/depan"], ["午前","ごぜん","Waktu pagi (sebelum jam 12 siang)"], ["国","くに","Negara"], ["国際交流","こくさいこうりゅう","Pertukaran internasional"], ["外国","がいこく","Luar negeri"], ["私","わたし","Saya"], ["父","ちち","Ayah"], ["お父さん","おとうさん","Ayah"], ["母","はは","Ibu"], ["お母さん","おかあさん","Ibu"], ["子供","こども","Anak-anak"], ["男の子","おとこのこ","Anak laki-laki"], ["女の子","おんなのこ","Anak perempuan"], ["日本","にほん","Jepang"], ["~曜日","~ようび","Nama hari"], ["~日","~にち","Hari (tanggal)"], ["今日","きょう","Hari ini"], ["日本語","にほんご","Bahasa Jepang"],
+    // Page 2
+    ["昨日","きのう","Kemaren"], ["明日","あした","Besok"], ["毎日","まいにち","Setiap hari"], ["誕生日","たんじょうび","Hari ulang tahun"], ["本","ほん","Buku"], ["水曜日","すいようび","Rabu (hari)"], ["水道","すいどう","Saluran air"], ["食べます","たべます","Makan"], ["食堂","しょくどう","Kantin"], ["食事","しょくじ","Makan bersama"], ["飲む","のむ","Minum"], ["飲み物","のみもの","Minuman"], ["魚","さかな","Ikan"], ["肉","にく","Daging"], ["牛肉","ぎゅうにく","Daging sapi"], ["豚肉","ぶたにく","Daging babi"], ["好き(な)","すき(な)","Suka"], ["家","いえ","Rumah"], ["家族","かぞく","Keluarga"], ["新しい","あたらしい","Baru"],
+    // Page 3
+    ["広い","ひろい","Luas"], ["広場","ひろば","Lapangan"], ["古い","ふるい","Lama, usang"], ["上","うえ","Atas"], ["上手","じょうず(な)","Pandai"], ["~以上","~いじょう","Lebih dari"], ["下","した","Bawah"], ["中","なか","Dalam"], ["中止","ちゅうし","Batal"], ["月曜日","げつようび","Senin (hari)"], ["~月","~がつ","Bulan (nama)"], ["今月","こんげつ","Bulan ini"], ["正月","しょうがつ","Tahun baru"], ["火曜日","かようび","Selasa (hari)"], ["木曜日","もくようび","Kamis (hari)"], ["金曜日","きんようび","Jum'at (hari)"], ["お金","おかね","Uang"], ["料金","りょうきん","Tarif, biaya"], ["土曜日","どようび","Sabtu (hari)"], ["朝","あさ","Pagi"],
+    // Page 4
+    ["昼","ひる","Siang"], ["夜","よる","Malam"], ["~時","~じ","Jam-(pukul)"], ["時間","じかん","Jam(waktu)"], ["時計","とけい","jam"], ["~分","~ふん","Menit"], ["自分","じぶん","Diri sendiri"], ["分ける","わける","Membagi"], ["~半","~はん","Setengah"], ["~枚","~まい","Lembaran"], ["読みます","よみます","Membaca"], ["聞きます","ききます","Bertanya/mendengarkan"], ["見ます","みます","Melihat"], ["友だち","ともだち","Teman"], ["何","なに","Apa"], ["去年","きょねん","Tahun lalu"], ["来年","らいねん","Tahun depan"], ["今年","ことし","Tahun ini"], ["昨年","さくねん","Tahun lalu"], ["毎年","まいとし","Setiap tahun"],
+    // Page 5
+    ["今日","きょう","Hari ini"], ["今週","こんしゅう","Minggu ini"], ["今度","こんど","Yang akan datang (Lain kali)"], ["今","いま","Sekarang"], ["今月","こんげつ","Bulan ini"], ["来週","らいしゅう","Minggu depan"], ["先週","せんしゅう","Minggu lalu"], ["週末","しゅうまつ","Akhir pekan"], ["温度","おんど","Suhu"], ["東","ひがし","Timur"], ["東京","とうきょう","Tokyo"], ["西","にし","Barat"], ["南","みなみ","Selatan"], ["北","きた","Utara"], ["会社","かいしゃ","Perusahaan"], ["会います","あいます","Bertemu"], ["会計","かいけい","Total"], ["会場","かいじょう","Balai pertemuan"], ["神社","じんじゃ","Kuil"], ["来ます","きます","Datang"],
+    // Page 6
+    ["持って行く","もっていく","Membawa pergi"], ["乗ります","のります","Naik"], ["行きます","いきます","Pergi"], ["旅行します","りょこうします","Berwisata"], ["銀行","ぎんこう","Bank"], ["大きい","おおきい","Besar"], ["大人","おとな","Dewasa"], ["大変","たいへん(な)","Berat (keadaan)"], ["高い","たかい","Tinggi"], ["低い","ひくい","Rendah"], ["午後","ごご","Waktu siang (setelah jam 12 siang)"], ["入口","いりぐち","Pintu masuk"], ["記入する","きにゅうする","Mengisi"], ["入院する","にゅういんする","Masuk Rumah Sakit"], ["入力する","にゅうりょくする","Menginput data"], ["入れる","いれる","Memasukan"], ["入ります","いります","Memerlukan"], ["横","よこ","Samping"], ["後ろ","うしろ","Belakang"], ["高校","こうこう","SMA"],
+    // Page 7
+    ["小さい","ちいさい","Kecil"], ["大切","たいせつ(な)","Penting, berharga"], ["大学","だいがく","Universitas"], ["出口","でぐち","Pintu keluar"], ["窓口","まどぐち","Loket"], ["一","いち","Satu"], ["安い","やすい","Murah"], ["引く","ひく","Menarik"], ["~階","~かい","Lantai"], ["出発する","しゅっぱつする","Berangkat"], ["二","に","Dua"], ["押す","おす","Menekan,mendorong"], ["出す","だす","Mengeluarkan"], ["出かける","でかける","Keluar rumah"], ["口","くち","Mulut"], ["三","さん","Tiga"], ["四","よん","Empat"], ["五","ご","Lima"], ["六","ろく","Enam"], ["七","なな","Tujuh"],
+    // Page 8
+    ["八","はち","Delapan"], ["九","きゅう","Sembilan"], ["十","じゅう","Sepuluh"], ["百","ひゃく","Seratus"], ["万","まん","Puluh ribu"], ["千","せん","seribu"], ["~円","~えん","Yen"], ["映画","えいが","Film"], ["勉強します","べんきょうします","Belajar"], ["買います","かいます","Membeli"], ["生活","せいかつ","Kehidupan"], ["学校","がっこう","Sekolah"], ["旅館","りょかん","Penginapan"], ["指定席","していせき","Tempat duduk reservasi"], ["予定","よてい","Rencana"], ["電気","でんき","Lampu, listrik"], ["生","なま","Mentah"], ["休み","やすみ","Libur"], ["計画","けいかく","Rencana"], ["英語","えいご","Bahasa inggris"],
+    // Page 9
+    ["学生","がくせい","Pelajar"], ["設定する","せっていする","Mengatur, mengeset"], ["予約","よやく","Reservasi"], ["温泉","おんせん","Pemandian air panas"], ["強い","つよい","Kuat"], ["留学する","りゅうがくする","Belajar diluar negeri"], ["先生","せんせい","Guru"], ["生まれる","うまれる","Lahir"], ["生産する","せいさんする","Memproduksi"], ["連絡先","れんらくさき","Nomor yang bisa dihubungi"], ["元気","げんき(な)","Sehat"], ["工事","こうじ","Konstruksi"], ["用事","ようじ","Urusan"], ["仕事","しごと","Pekerjaan"], ["天気","てんき","Cuaca"], ["病気","びょうき","Sakit"], ["花","はな","Bunga"], ["秋","あき","Musim gugur"], ["暑い","あつい","Panas"], ["台風","たいふう","Angin topan"],
+    // Page 10
+    ["働く","はたらく","Bekerja"], ["同じ","おなじ","Sama"], ["春","はる","Musim semi"], ["晴れ","はれ","Cerah"], ["明るい","あかるい","Terang, ceria"], ["人","ひと","Orang"], ["夏","なつ","Musim panas"], ["電話番号","でんわばんごう","Nomor telepon"], ["雪","ゆき","Salju"], ["町","まち","Kota"], ["人口","じんこう","Penduduk"], ["冬","ふゆ","Musim dingin"], ["習慣","しゅうかん","Kebiasaan"], ["忙しい","いそがしい","Sibuk"], ["説明する","せつめいする","Menjelaskan"], ["調理方法","ちょうりほうほう","Metode memasak"], ["季節","きせつ","Musim"], ["習う","ならう","Belajar"], ["作る","つくる","Membuat"], ["風","かぜ","Angin"],
+    // Page 11
+    ["音楽","おんがく","Musik"], ["話す","はなす","Berbicara"], ["音","おと","Bunyi"], ["犬","いぬ","Anjing"], ["雨","あめ","Hujan"], ["楽しい","たのしい","Menyenangkan"], ["練習","れんしゅう","Latihan"], ["~方","~かた","Cara"], ["夕方","ゆうがた","Sore"], ["寒い","さむい","Dingin(suhu udara)"], ["店","みせ","Toko"], ["店長","てんちょう","Kepala toko"], ["便利","べんり(な)","Praktis"], ["郵便局","ゆうびんきょく","Kantor pos"], ["静か","しずか(な)","Sunyi"], ["道具","どうぐ","Alat"], ["公園","こうえん","Taman"], ["道","みち","Jalan"], ["少し","すこし","Sedikit"], ["多い","おおい","Banyak (orang)"],
+    // Page 12
+    ["遠い","とおい","Jauh"], ["少ない","すくない","Sedikit (orang)"], ["有名","ゆうめい(な)","Terkenal"], ["利用する","りようする","Menggunakan jasa"], ["不便","ふべん(な)","Tidak praktis"], ["止まる","とまる","Berhenti, parkir"], ["左","ひだり","Kiri"], ["近所","きんじょ","Tetangga"], ["着く","つく","Sampai, tiba"], ["店員","てんいん","Karyawan toko"], ["待つ","まつ","Menunggu"], ["場所","ばしょ","Tempat"], ["車","くるま","Mobil"], ["右","みぎ","Kanan"], ["動物園","どうぶつえん","Kebun binatang"], ["着る","きる","Memakai pakaian"], ["場合","ばあい","Apabila"], ["自転車","じてんしゃ","Sepeda"], ["近く","ちかく","Dekat"], ["最近","さいきん","Akhir-akhir ini"],
+    // Page 13
+    ["禁止","きんし","Larangan"], ["駅","えき","Stasiun"], ["受付","うけつけ","Resepsionis"], ["送る","おくる","Mengirim"], ["電車","でんしゃ","Kereta"], ["到着する","とうちゃくする","Sampai, tiba, datang"], ["急に","きゅうに","Tiba-tiba"], ["図書館","としょかん","Perpustakaan"], ["~回","~かい","~ Kali"], ["用意する","よういする","Menyiapkan"], ["運動する","うんどうする","Berolahraga"], ["都合","つごう","Kondisi, keadaan"], ["試合","しあい","Pertandingan"], ["全部","ぜんぶ","Semuanya"], ["参加する","さんかする","Mengikuti, partisipasi"], ["合格する","ごうかくする","Lulus (ujian)"], ["難しい","むずかしい","Sulit, susah"], ["登る","のぼる","Mendaki"], ["教える","おしえる","Memberitahu, mengajar"], ["全員","ぜんいん","Seluruh anggota"],
+    // Page 14
+    ["自動","じどう","Otomatis"], ["動く","うごく","Bergerak, berpindah"], ["博物館","はくぶつかん","Museum"], ["教科書","きょうかしょ","Buku pelajaran"], ["意味","いみ","Arti"], ["急ぐ","いそぐ","Buru-buru"], ["書く","かく","Menulis"], ["貸す","かす","Meminjamkan"], ["言う","いう","Berkata"], ["野菜","やさい","Sayuran"], ["漢字","かんじ","Kanji"], ["材料","ざいりょう","Bahan masakan"], ["教室","きょうしつ","Ruang kelas"], ["お酒","おさけ","Minuman keras"], ["皿","さら","Piring"], ["数字","すうじ","Angka"], ["無料","むりょう","Gratis"], ["売る","うる","Menjual"], ["卵","たまご","Telor"], ["お茶","おちゃ","Teh Jepang"],
+    // Page 15
+    ["理由","りゆう","Alasan"], ["終わる","おわる","Selesai"], ["机","つくえ","Meja"], ["使う","つかう","Menggunakan"], ["寝る","ねる","Tidur"], ["調べる","しらべる","Memeriksa"], ["自由","じゆう","Bebas"], ["歌手","かしゅ","Penyanyi"], ["お願いし","おねがいします","Mohon, tolong"], ["医者","いしゃ","Dokter"], ["甘い","あまい","Manis"], ["税別","ぜいべつ","Pajak terpisah"], ["苦労する","くろうする","Waktu yang tidak tepat"], ["特別","とくべつ(な)","Khusus, spesial"], ["住む","すむ","Tinggal"], ["苦手","にがて(な)","Payah"], ["吸う","すう","Menghisap (rokok)"], ["辛い","からい","Pedas"], ["早く","はやく","Cepat"], ["痛い","いたい","Sakit"],
+    // Page 16
+    ["手","て","Tangan"], ["帰る","かえる","Pulang"], ["味","あじ","Rasa"], ["取る","とる","Mengambil"], ["眠い","ねむい","Mengantuk"], ["~機","~き","Mesin ~"], ["熱","ねつ","Demam"], ["お湯","おゆ","Air panas"], ["伝える","つたえる","Menyampaikan"], ["薬","くすり","Obat"], ["悪い","わるい","Buruk, jelek"], ["病院","びょういん","Rumah sakit"], ["料理","りょうり","Masakan"], ["住所","じゅうしょ","Alamat"], ["体","からだ","Badan, tubuh"], ["体験","たいけん","Pengalaman pribadi"], ["顔","かお","Muka, wajah"], ["耳","みみ","Telinga"], ["海","うみ","Laut"], ["森","もり","Hutan"],
+    // Page 17
+    ["目","め","Mata"], ["思う","おもう","Merasa, berpikir"], ["足","あし","Kaki"], ["山","やま","Gunung"], ["観光地","かんこうち","Tempat wisata"], ["頭","あたま","Kepala"], ["結婚","けっこん","Menikah"], ["起きる","おきる","Bangun"], ["選ぶ","えらぶ","Memilih"], ["光る","ひかる","Bercahaya"], ["満足","まんぞく(な)","Puas"], ["女性","じょせい","Wanita"], ["走る","はしる","Berlari"], ["幸せ","しあわせ(な)","Bahagia"], ["客","きゃく","Tamu"], ["歩く","あるく","Berjalan"], ["親切","しんせつ(な)","Baik hati"], ["兄","あに","Kakak laki-laki"], ["お祝い","おいわい","Perayaan"], ["島","しま","Pulau"],
+    // Page 18
+    ["運転","うんてん","Mengendarai"], ["妻","つま","Istri sendiri"], ["弟","おとうと","Adik laki-laki"], ["男性","だんせい","Pria dewasa"], ["川","かわ","Sungai"], ["姉","あね","Kakak perempuan"], ["妹","いもうと","Adik perempuan"], ["夫","おっと","Suami sendiri"], ["両親","りょうしん","Orang tua"], ["価格","かかく","Harga"], ["経験","けいけん","Pengalaman"], ["遊ぶ","あそぶ","Bermain"], ["地震","じしん","Gempa bumi"], ["船","ふね","Kapal"], ["故障","こしょう","Rusak"], ["歌","うた","Lagu"], ["普通","ふつう","Biasa"], ["写真","しゃしん","Foto"], ["交通","こうつう","Lalu lintas"], ["絵","え","Gambar"],
+    // Page 19
+    ["短い","みじかい","Pendek"], ["焼く","やく","Membakar"], ["長い","ながい","Panjang"], ["大切","たいせつ(な)","Penting, berharga"], ["泳ぐ","およぐ","Berenang"], ["役に立つ","やくにたつ","Bermanfaat"], ["切る","きる","Memotong"], ["立つ","たつ","Berdiri"], ["~屋","〜や・みせ","Toko ~"], ["空","そら","Langit"], ["注文","ちゅうもん","Memesan"], ["量","りょう","Porsi"], ["泣く","なく","Menangis"], ["油","あぶら","Minyak"], ["お知らせ","おしらせ","Pengumuman"], ["~様","~さま","Nyonya, tuan"], ["塩","しお","Garam"], ["文化","ぶんか","Budaya"], ["事故","じこ","Kecelakaan"], ["条件","じょうけん","Syarat, kondisi"],
+    // Page 20
+    ["牛乳","ぎゅうにゅう","Susu sapi"], ["自然","しぜん","Alam"], ["ご飯","ごはん","Nasi"], ["禁煙","きんえん","Dilarang merokok"], ["開く・け","ひらく、あけます","Terbuka/membuka"], ["世界","せかい","Dunia"], ["重い","おもい","Berat"], ["変わる","かわる","Berubah"], ["申し込む","もうしこむ","Mendaftar"], ["消す","けす","Menghapus, mematikan"], ["始まる","はじまる","Dimulai"], ["消費税","しょうひぜい","Termasuk pajak"], ["返す","かえす","Mengembalikan"], ["~式","~しき","Upacara"], ["値段","ねだん","Harga"], ["祭り","まつり","Festival"], ["商品","しょうひん","Produk"], ["借りる","かりる","Meminjam"], ["特に","とくに","Terutama"], ["案内する","あんないする","Memandu"],
+    // Page 21
+    ["米","こめ","Beras"], ["卒業する","そつぎょうする","Lulus (sekolah)"], ["閉まる","しまる","Tertutup"], ["袋","ふくろ","Kantong kresek"], ["授業","じゅぎょう","Pelajaran"], ["服","ふく","Pakaian"], ["営業する","えいぎょうする","Membuka usaha"], ["情報","じょうほう","Informasi"], ["暗い","くらい","Gelap"], ["白","しろ","Putih"], ["慣れる","なれる","Terbiasa"], ["黒","くろ","Hitam"], ["質問","しつもん","Pertanyaan"], ["色","いろ","Warna"], ["青","あお","Biru"], ["怒る","おこる","Marah"], ["赤","あか","Merah"], ["紙","かみ","Kertas"], ["軽い","かるい","Ringan"], ["必要","ひつよう(な)","Penting"],
+    // Page 22
+    ["市","し","Kota"], ["外","そと","Luar"], ["危険","きけん","Berbahaya"], ["~種類","~しゅるい","Jenis"], ["燃える","もえる","Terbakar"], ["増える","ふえる","Bertambah"], ["困る","こまる","Bingung"], ["進む","すすむ","Maju"], ["集まる","あつまる","Berkumpul"], ["声","こえ","Suara"], ["希望","きぼう","Harapan"], ["続ける","つづける","Melanjutkan"], ["考える","かんがえる","Berpikir"], ["建てる","たてる","Membangun"], ["笑う","わらう","Tertawa"], ["決める","きめる","Memutuskan"], ["心配","しんぱい(な)","Khawatir"], ["募集","ぼしゅう","Rekrutmen"], ["問題","もんだい","Masalah, soal"], ["違う","ちがう","Beda, salah"],
+    // Page 23
+    ["捨てる","すてる","Membuang"], ["危ない","あぶない","Berbahaya"], ["洗う","あらう","Mencuci"], ["相談","そうだん","Diskusi"], ["門","もん","Gerbang"], ["雲","くも","Awan"], ["空気","くうき","Udara"], ["京都","きょうと","Kyoto"], ["地図","ちず","Peta"], ["面接","めんせつ","Wawancara"], ["汚い","きたない","Kotor"], ["猫","ねこ","Kucing"], ["鳥","とり","Burung"], ["馬","うま","Kuda"], ["面談","めんだん","praWawancara"], ["月","つき","Bulan"], ["火","ひ","Api"], ["水","みず","Air"], ["木","き","Pohon"], ["土","つち","Tanah"],
+    // Page 24
+    ["皆","みな","Semua"], ["村","むら","Desa"], ["傘","かさ","Payung"], ["日記","にっき","Catatan harian"], ["靴","くつ","Sepatu"], ["彼","かれ","Dia (laki-laki)"], ["彼女","かのじょ","Dia (perempuan)"], ["親","おや","Orang tua"], ["招待","しょうたい","Undangan"], ["丁寧","ていねい","Sopan"], ["最後","さいご","Terakhir"], ["最高","さいこう","Terbaik"], ["最低","さいてい","Terendah"], ["最悪","さいあく","Terburuk"], ["池","いけ","Kolam"], ["旅","たび","Perjalanan"], ["林","はやし","Hutan pepohonan"], ["力","ちから","Kekuatan"], ["祖母","そぼ","Nenek"], ["祖父","そふ","Kakek"],
+    // Page 25
+    ["泊まる","とまる","Menginap"], ["自己紹介","じこしょうかい","Perkenalan"], ["熱い","あつい","Panas (benda)"], ["厚い","あつい","Tebal"], ["喜ぶ","よろこぶ","Bergembira"], ["成長","せいちょう","Pertumbuhan"], ["若い","わかい","Muda"], ["帰国","きこく","Pulang ke negara"], ["薬局","やっきょく","Apotek"], ["人形","にんぎょう","Boneka"], ["静かな","しずかな","Tenang/Sunyi"], ["教室","きょうしつ","Ruang Kelas"], ["休憩","きゅうけい","Istirahat sebentar"], ["逃げます","にげます","Melarikan diri"], ["飾ります","かざります","Menghias"], ["咳","せき","Batuk"], ["玄関","げんかん","Pintu masuk"], ["自転車","じてんしゃ","Sepeda"], ["閉めます","しめます","Menutup"], ["浴びます","あびます","Mandi"],
+    // Page 26
+    ["忘れます","わすれます","Lupa"], ["次","つぎ","Selanjutnya"], ["今度","こんど","Lain kali"], ["入り口","いりぐち","Pintu masuk"], ["学校","がっこう","Sekolah"], ["持ちます","もちます","Membawa"], ["待ちます","まちます","Menunggu"], ["出発","しゅっぱつ","Keberangkatan"], ["自然","しぜん","Alam"], ["安全","あんぜん","Aman"], ["豊か","ゆたか","Kaya/melimpah"], ["新鮮","しんせん","Segar"], ["必ず","かならず","Pasti"], ["階段","かいだん","Tangga"], ["可愛い","かわいい","Imut/lucu"], ["柔らかい","やわらかい","Lembut"], ["上げます","あげます","Memberikan"], ["貰う","もらう","Menerima"], ["付ける","つける","Memakai"], ["花火","はなび","Kembang api"],
+    // Page 27
+    ["連絡しま","れんらくします","Menghubungi"], ["素敵","すてき","Bagus"], ["残念","ざんねん","Sayangnya"], ["残業","ざんぎょう","Lembur"], ["外国","がいこく","Luar negri"], ["毎晩","まいばん","Setiap malam"], ["宿題","しゅくだい","PR/tugas"], ["工場","こうじょう","Pabrik"], ["事務室","じむしつ","Ruang kantor"], ["鼻","はな","Hidung"], ["書類","しょるい","Dokumen"], ["毎日","まいにち","Setiap hari"], ["毎週","まいしゅう","Setiap minggu"], ["洗って","あらって","Mencuci"], ["迷って","まよって","Tersesat"], ["知ります","しります","Mengetahui, tahu"], ["払う","はらう","Membayar"], ["得意","とくい","Mahir dalam"], ["踊る","おどる","Menari"], ["並びます","ならびます","Berbaris"],
+    // Page 28
+    ["参加する","さんかする","Partisipasi"], ["狭い","せまい","Sempit"], ["怖い","こわい","Takut"], ["大会","たいかい","Turnamen/pertandingan"], ["忙しい","いそがしい","Sibuk"], ["負けて","まけて","Kalah"], ["勝ちます","かちます","Menang"], ["朝","あさ","Pagi"], ["昼","ひる","Siang"], ["夜","よる","Malam"], ["悲しい","かなしい","Sedih"], ["運ぶ","はこぶ","Mengangkut"], ["帽子","ぼうし","Topi"], ["髭","ひげ","Jenggot"], ["一緒に","いっしょに","Bersama-sama"], ["間違えて","まちがえて","Salah"], ["最近","さいきん","Akhir-akhir ini"], ["広場","ひろば","Lapangan"], ["先月","せんげつ","Bulan lalu"], ["失礼しま","しつれいします","Permisi"],
+    // Page 29
+    ["お疲れ","おつかれ","Kerja bagus"], ["お先に","おさきに","Permisi duluan"], ["急いで","いそいで","Buru-buru"], ["走ります","はしります","Berlari"], ["座ります","すわります","Duduk"], ["息をする","いきをする","Bernafas"], ["謝る","あやまる","Meminta maaf"], ["諦める","あきらめる","Menyerah"], ["辞める","やめる","Berhenti dari perusahaan"], ["食べ物","たべもの","Makanan"], ["買い物","かいもの","Berbelanja"], ["送ります","おくります","Mengirim"], ["煩い","うるさい","Berisik"], ["試験","しけん","Ujian"], ["試合","しあい","Pertandingan"], ["話す","はなす","Berbicara"]
+];
+
+let currentPage = 1;
+const itemsPerPage = 20;
+const totalPages = Math.ceil(db.length / itemsPerPage);
+
+// Inisialisasi info total kata sesuai dengan file PDF (576 item dari 29 halaman)
+document.getElementById('tot-words').textContent = `(${db.length} Kosakata)`;
+document.getElementById('tot-page').textContent = totalPages;
+
+function renderCards() {
+    const container = document.getElementById('flashcard-grid');
+    container.innerHTML = '';
+    
+    const start = (currentPage - 1) * itemsPerPage;
+    const end = Math.min(start + itemsPerPage, db.length);
+    const currentData = db.slice(start, end);
+
+    currentData.forEach(item => {
+        const kanji = item[0];
+        const furigana = item[1];
+        const arti = item[2];
+        const romaji = kanaToRomaji(furigana);
+
+        // Buat struktur kartu sama persis dengan referensi UI
+        const cardHTML = `
+        <div class="card group perspective-1000 cursor-pointer w-full aspect-[5/4] sm:h-36" onclick="this.classList.toggle('flipped')">
+            <div class="card-inner relative w-full h-full transform-style-3d">
+                
+                <!-- Sisi Depan (Kanji Saja, background putih, border tipis) -->
+                <div class="absolute inset-0 backface-hidden bg-white border border-slate-200 rounded-2xl shadow-[0_2px_8px_rgba(0,0,0,0.04)] flex flex-col items-center justify-center p-3">
+                    <span class="kanji-font text-3xl sm:text-4xl font-bold text-slate-800">${kanji}</span>
+                </div>
+                
+                <!-- Sisi Belakang (Furigana, Romaji, Arti - background mint, border hijau tosca) -->
+                <div class="absolute inset-0 backface-hidden rotate-y-180 bg-[#f0fdf4] border-2 border-[#6ee7b7] rounded-2xl shadow-sm flex flex-col items-center justify-center p-3 text-center">
+                    <span class="kanji-font text-lg sm:text-xl font-bold text-slate-900 mb-1 leading-tight">${furigana}</span>
+                    <span class="text-sm italic text-teal-600 mb-2">[${romaji}]</span>
+                    <span class="text-xs sm:text-sm text-slate-700 font-medium leading-snug px-1">${arti}</span>
+                </div>
+                
+            </div>
+        </div>
+        `;
+        container.insertAdjacentHTML('beforeend', cardHTML);
+    });
+
+    // Update Navigasi
+    document.getElementById('curr-page').textContent = currentPage;
+    document.getElementById('btn-prev').disabled = currentPage === 1;
+    document.getElementById('btn-next').disabled = currentPage === totalPages;
+}
+
+function changePage(direction) {
+    const newPage = currentPage + direction;
+    if (newPage >= 1 && newPage <= totalPages) {
+        currentPage = newPage;
+        renderCards();
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+}
+
+// Fungsi untuk mengacak array khusus halaman aktif (Algoritma Fisher-Yates)
+function shuffleArray(array) {
+    let currentIndex = array.length, randomIndex;
+    while (currentIndex !== 0) {
+        randomIndex = Math.floor(Math.random() * currentIndex);
+        currentIndex--;
+        [array[currentIndex], array[randomIndex]] = [array[randomIndex], array[currentIndex]];
+    }
+    return array;
+}
+
+function resetCards() {
+    // 1. Ambil indeks data untuk halaman saat ini di database utama (db)
+    const start = (currentPage - 1) * itemsPerPage;
+    const end = Math.min(start + itemsPerPage, db.length);
+    
+    // 2. Potong array khusus halaman ini, lalu acak posisinya
+    let pageSlice = db.slice(start, end);
+    shuffleArray(pageSlice);
+    
+    // 3. Masukkan kembali data yang sudah diacak ke dalam database utama
+    for (let i = 0; i < pageSlice.length; i++) {
+        db[start + i] = pageSlice[i];
+    }
+    
+    // 4. Render ulang kartu di halaman tersebut
+    renderCards();
+}
+
+// Fungsi untuk menyiapkan dan mencetak PDF semua kartu sekaligus
+function prepareAndPrint() {
+    const printContainer = document.getElementById('print-container');
+    printContainer.innerHTML = '';
+    
+    // Header dokumen PDF
+    const headerHTML = '<h2 style="text-align:center; font-size: 22px; font-family: sans-serif; margin-bottom: 24px; color: #0f172a;">Daftar Lengkap Flashcard Kanji JFT (576 Kosakata)</h2>';
+    
+    // Grid setup untuk PDF
+    const grid = document.createElement('div');
+    grid.style.display = 'grid';
+    grid.style.gridTemplateColumns = 'repeat(4, 1fr)';
+    grid.style.gap = '12px';
+    
+    // Render semua 576 kata dari Database
+    db.forEach((item, index) => {
+        const kanji = item[0];
+        const furigana = item[1];
+        const arti = item[2];
+        const romaji = kanaToRomaji(furigana);
+        
+        // Desain Kartu Khusus PDF
+        const cardHTML = `
+            <div style="border: 2px solid #e2e8f0; padding: 12px; text-align: center; border-radius: 12px; page-break-inside: avoid; font-family: sans-serif;">
+                <div style="font-size: 11px; color: #94a3b8; text-align: left; margin-bottom: 4px;">#${index + 1}</div>
+                <div style="font-size: 28px; font-weight: bold; margin-bottom: 8px; font-family: 'Noto Sans JP', sans-serif; color: #1e293b;">${kanji}</div>
+                <div style="font-size: 14px; color: #334155; margin-bottom: 2px;">${furigana}</div>
+                <div style="font-size: 12px; color: #0d9488; margin-bottom: 8px; font-style: italic;">[${romaji}]</div>
+                <div style="font-size: 13px; font-weight: bold; color: #0f172a;">${arti}</div>
+            </div>
+        `;
+        grid.insertAdjacentHTML('beforeend', cardHTML);
+    });
+    
+    printContainer.insertAdjacentHTML('afterbegin', headerHTML);
+    printContainer.appendChild(grid);
+    
+    // Panggil dialog print browser dengan sedikit jeda agar DOM ter-render
+    setTimeout(() => {
+        window.print();
+    }, 400);
+}
+
+// Fitur Share
+function showToast(message) {
+    const toast = document.getElementById('toast');
+    document.getElementById('toast-message').textContent = message;
+    toast.classList.remove('opacity-0');
+    setTimeout(() => {
+        toast.classList.add('opacity-0');
+    }, 3000);
+}
+
+function shareApp() {
+    if (navigator.share) {
+        navigator.share({
+            title: 'Flashcard Kanji JFT',
+            text: 'Latihan Flashcard Kanji JFT interaktif (576 Kosakata) dengan fitur Furigana dan Romaji.',
+            url: window.location.href
+        }).catch(err => {
+            console.log('Error sharing:', err);
+        });
+    } else {
+        // Fallback memanggil modern clipboard / execCommand
+        try {
+            const tempInput = document.createElement('input');
+            tempInput.value = window.location.href;
+            document.body.appendChild(tempInput);
+            tempInput.select();
+            document.execCommand('copy');
+            document.body.removeChild(tempInput);
+            showToast("Link berhasil disalin!");
+        } catch (err) {
+            showToast("Browser tidak mendukung fitur ini.");
+        }
+    }
+}
+
+// Render halaman pertama
+renderCards();
+</script>
+
+</body>
+</html>
